@@ -1,17 +1,17 @@
 diff --git a/src/main.ts b/src/main.ts
-index ff9a5e89296..13bd078db46 100644
+index deba4c4..02f9cda 100644
 --- a/src/main.ts
 +++ b/src/main.ts
-@@ -10,7 +10,7 @@ import { performance } from 'perf_hooks';
+@@ -9,7 +9,7 @@ import * as os from 'node:os';
+ import { performance } from 'node:perf_hooks';
  import { configurePortable } from './bootstrap-node.js';
  import { bootstrapESM } from './bootstrap-esm.js';
- import { fileURLToPath } from 'url';
 -import { app, protocol, crashReporter, Menu, contentTracing } from 'electron';
 +import { app, protocol, Menu, contentTracing } from 'electron';
  import minimist from 'minimist';
  import { product } from './bootstrap-meta.js';
  import { parse } from './vs/base/common/jsonc.js';
-@@ -72,21 +72,6 @@ const codeCachePath = getCodeCachePath();
+@@ -69,21 +69,6 @@ const codeCachePath = getCodeCachePath();
  // Disable default menu (https://github.com/electron/electron/issues/35512)
  Menu.setApplicationMenu(null);
  
@@ -33,7 +33,7 @@ index ff9a5e89296..13bd078db46 100644
  // Set logs path before app 'ready' event if running portable
  // to ensure that no 'logs' folder is created on disk at a
  // location outside of the portable directory
-@@ -391,97 +376,6 @@ function getArgvConfigPath(): string {
+@@ -441,96 +426,6 @@ function getArgvConfigPath(): string {
  	return path.join(os.homedir(), dataFolderName!, 'argv.json');
  }
  
@@ -127,7 +127,6 @@ index ff9a5e89296..13bd078db46 100644
 -		compress: true
 -	});
 -}
--
+ 
  function getJSFlags(cliArgs: NativeParsedArgs): string | null {
  	const jsFlags: string[] = [];
- 
