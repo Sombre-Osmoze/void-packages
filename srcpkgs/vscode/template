@@ -1,11 +1,11 @@
 # Template file for 'vscode'
 pkgname=vscode
-version=1.100.3
+version=1.105.1
 revision=1
-_electronver=35.7.2
+_electronver=37.6.0
 _npmver=10.8.3
 hostmakedepends="pkg-config python3 python3-setuptools nodejs tar git ripgrep"
-makedepends="libxkbfile-devel libsecret-devel libxml2-devel mit-krb5-devel nodejs-devel ncurses-devel electron${_electronver%%.*}-devel"
+makedepends="libxkbfile-devel libsecret-devel libxml2-devel mit-krb5-devel nodejs-devel ncurses-devel"
 depends="libXtst ncurses nss xdg-utils ripgrep electron${_electronver%%.*}"
 short_desc="Microsoft Code for Linux"
 maintainer="Alex Lohr <alexthkloss@web.de>"
@@ -21,7 +21,7 @@ fi
 
 # avoid downloading electron binaries for target platform; we use
 # the system electron, and downloading does not work for all archs
-export ELECTRON_SKIP_BINARY_DOWNLOAD=1
+export ELECTRON_SKIP_BINARY_DOWNLOAD=0
 
 do_configure() {
 	# Use npm to install dependencies
@@ -58,13 +58,13 @@ do_build() {
 	vsed -e "s/validateChecksum: true/validateChecksum: false/g" -i build/lib/electron.*s
 
 	export CFLAGS="$CFLAGS -I/usr/include/node"
-	node_modules/.bin/gulp --max_old_space_size=16384 --optimize-for-size --series vscode-linux-x64-min
+	node_modules/.bin/gulp --max_old_space_size=16384 --optimize-for-size --series vscode-linux-arm64-min
 }
 
 do_install() {
 	vmkdir usr/lib/code-oss
-	vcopy ../VSCode-linux-x64/resources usr/lib/code-oss
-	vcopy ../VSCode-linux-x64/bin usr/lib/code-oss
+	vcopy ../VSCode-linux-arm64/resources usr/lib/code-oss
+	vcopy ../VSCode-linux-arm64/bin usr/lib/code-oss
 	# Replace statically included binary with system copy
 	ln -sf /usr/bin/rg ${DESTDIR}/usr/lib/code-oss/resources/app/node_modules/@vscode/ripgrep/bin/rg
 	vmkdir usr/bin
