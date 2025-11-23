@@ -6,13 +6,13 @@ _electronver=37.6.0
 _npmver=10.8.3
 hostmakedepends="pkg-config python3 python3-setuptools nodejs tar git ripgrep"
 makedepends="libxkbfile-devel libsecret-devel libxml2-devel mit-krb5-devel nodejs-devel ncurses-devel"
-depends="libXtst ncurses nss xdg-utils ripgrep electron${_electronver%%.*}"
+depends="libXtst ncurses nss xdg-utils ripgrep"
 short_desc="Microsoft Code for Linux"
 maintainer="Alex Lohr <alexthkloss@web.de>"
 license="MIT"
 homepage="https://code.visualstudio.com/"
 distfiles="https://github.com/microsoft/vscode/archive/refs/tags/${version}.tar.gz"
-checksum=41aea581620e48f7ba33e29ab6a9b43d25632ce11d06480cdfe0e8f904fe3637
+checksum=eb070c42959c35f59a46659dcb5570e34b11454441c2199a459f8b125e6f907d
 nocross=yes # x64 build does not cut it, it contains native code
 
 if [ "$XBPS_TARGET_WORDSIZE" = "32" ]; then
@@ -74,7 +74,6 @@ do_install() {
 	vmkdir usr/share/pixmaps
 	ln -sf /usr/lib/code-oss/resources/app/resources/linux/code.png ${DESTDIR}/usr/share/pixmaps/code-oss.png
 	vsed \
-	-e "s|ELECTRON=.*|ELECTRON=/usr/lib/electron${_electronver%%.*}/electron|g" \
 	-e 's|"$CLI"|"$CLI" --app="${VSCODE_PATH}/resources/app"|g' \
 	-i "$DESTDIR"/usr/lib/code-oss/bin/code-oss
 	vlicense LICENSE.txt
