@@ -1,0 +1,4 @@
+{
+ global: dsnowball_init; dsnowball_lexize;
+ local: *;
+};
