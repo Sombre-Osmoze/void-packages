@@ -1,0 +1,134 @@
+From aeb25bb937c75ec6a0d40116ff62af6522848e4e Mon Sep 17 00:00:00 2001
+From: Sombre-Osmoze <sombre@osmoze.xyz>
+Date: Thu, 7 May 2026 22:55:39 +0000
+Subject: [PATCH] platform_profile: allow registration on non-ACPI (DT) systems
+
+The platform_profile subsystem refuses to load when acpi_disabled is
+set (DT-only ARM64 laptops like Qualcomm X1E80100). However, the class
+device interface (/sys/class/platform-profile/) is ACPI-agnostic and
+power-profiles-daemon already discovers profiles through it.
+
+Remove the acpi_disabled early return and guard all acpi_kobj usages
+with NULL checks. The legacy /sys/firmware/acpi/platform_profile sysfs
+node is only created when ACPI is available; the class device works
+regardless.
+
+This enables platform_profile on DT-based ARM64 laptops (ASUS Zenbook
+A14, Lenovo Yoga Slim 7x, etc.) where drivers can register profiles
+and PPD exposes them to desktop environments.
+
+Signed-off-by: Sombre-Osmoze <sombre@osmoze.xyz>
+---
+ drivers/acpi/platform_profile.c | 43 ++++++++++++++++++++-------------
+ 1 file changed, 26 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/acpi/platform_profile.c b/drivers/acpi/platform_profile.c
+index ea04a8c69215..82dcb4be21b3 100644
+--- a/drivers/acpi/platform_profile.c
++++ b/drivers/acpi/platform_profile.c
+@@ -216,7 +216,8 @@ static ssize_t profile_store(struct device *dev,
+ 			return ret;
+ 	}
+ 
+-	sysfs_notify(acpi_kobj, NULL, "platform_profile");
++	if (acpi_kobj)
++		sysfs_notify(acpi_kobj, NULL, "platform_profile");
+ 
+ 	return count;
+ }
+@@ -436,7 +437,8 @@ static ssize_t platform_profile_store(struct kobject *kobj,
+ 			return ret;
+ 	}
+ 
+-	sysfs_notify(acpi_kobj, NULL, "platform_profile");
++	if (acpi_kobj)
++		sysfs_notify(acpi_kobj, NULL, "platform_profile");
+ 
+ 	return count;
+ }
+@@ -482,7 +484,8 @@ void platform_profile_notify(struct device *dev)
+ 	scoped_cond_guard(mutex_intr, return, &profile_lock) {
+ 		_notify_class_profile(dev, NULL);
+ 	}
+-	sysfs_notify(acpi_kobj, NULL, "platform_profile");
++	if (acpi_kobj)
++		sysfs_notify(acpi_kobj, NULL, "platform_profile");
+ }
+ EXPORT_SYMBOL_GPL(platform_profile_notify);
+ 
+@@ -532,7 +535,8 @@ int platform_profile_cycle(void)
+ 			return err;
+ 	}
+ 
+-	sysfs_notify(acpi_kobj, NULL, "platform_profile");
++	if (acpi_kobj)
++		sysfs_notify(acpi_kobj, NULL, "platform_profile");
+ 
+ 	return 0;
+ }
+@@ -606,11 +610,14 @@ struct device *platform_profile_register(struct device *dev, const char *name,
+ 		goto cleanup_ida;
+ 	}
+ 
+-	sysfs_notify(acpi_kobj, NULL, "platform_profile");
++	if (acpi_kobj)
++		sysfs_notify(acpi_kobj, NULL, "platform_profile");
+ 
+-	err = sysfs_update_group(acpi_kobj, &platform_profile_group);
+-	if (err)
+-		goto cleanup_cur;
++	if (acpi_kobj) {
++		err = sysfs_update_group(acpi_kobj, &platform_profile_group);
++		if (err)
++			goto cleanup_cur;
++	}
+ 
+ 	return ppdev;
+ 
+@@ -642,8 +649,10 @@ void platform_profile_remove(struct device *dev)
+ 	ida_free(&platform_profile_ida, pprof->minor);
+ 	device_unregister(&pprof->dev);
+ 
+-	sysfs_notify(acpi_kobj, NULL, "platform_profile");
+-	sysfs_update_group(acpi_kobj, &platform_profile_group);
++	if (acpi_kobj)
++		sysfs_notify(acpi_kobj, NULL, "platform_profile");
++	if (acpi_kobj)
++		sysfs_update_group(acpi_kobj, &platform_profile_group);
+ }
+ EXPORT_SYMBOL_GPL(platform_profile_remove);
+ 
+@@ -691,23 +700,23 @@ static int __init platform_profile_init(void)
+ {
+ 	int err;
+ 
+-	if (acpi_disabled)
+-		return -EOPNOTSUPP;
+-
+ 	err = class_register(&platform_profile_class);
+ 	if (err)
+ 		return err;
+ 
+-	err = sysfs_create_group(acpi_kobj, &platform_profile_group);
+-	if (err)
+-		class_unregister(&platform_profile_class);
++	if (acpi_kobj) {
++		err = sysfs_create_group(acpi_kobj, &platform_profile_group);
++		if (err)
++			class_unregister(&platform_profile_class);
++	}
+ 
+ 	return err;
+ }
+ 
+ static void __exit platform_profile_exit(void)
+ {
+-	sysfs_remove_group(acpi_kobj, &platform_profile_group);
++	if (acpi_kobj)
++		sysfs_remove_group(acpi_kobj, &platform_profile_group);
+ 	class_unregister(&platform_profile_class);
+ }
+ module_init(platform_profile_init);
+-- 
+2.54.0
+
