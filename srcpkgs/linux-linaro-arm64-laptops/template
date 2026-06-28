@@ -1,15 +1,17 @@
 # Template file for 'linux-linaro-arm64-laptops'
 pkgname=linux-linaro-arm64-laptops
-version=6.18.rc6
-revision=4
+version=7.1.0
+revision=1
 short_desc="Linux kernel and modules (${version%.*} series)"
 maintainer="Duncaen <duncaen@voidlinux.org>"
 license="GPL-2.0-only"
 homepage="https://www.kernel.org"
 
-distfiles="https://gitlab.com/Linaro/arm64-laptops/linux/-/archive/4654e015816964ac8bca615a6c3bc4ad30b6f283/linux-4654e015816964ac8bca615a6c3bc4ad30b6f283.tar.gz"
+# GitHub fork with linux-next + Zenbook A14 patches
+# Commit: 4b06349d59e8 - Merge linux-next into zenbook-a14-linux-next
+distfiles="https://github.com/Sombre-Osmoze/linux/archive/7580bea2eff57a41fd60c264dfa6cb2bf6499fb2.tar.gz"
 
-checksum="e8b2ad9d46d8835053d268481580b326c1f5e3419dd19d215512131f41c59486"
+checksum=0000000000000000000000000000000000000000000000000000000000000000
 
 python_version=3
 
@@ -69,6 +71,13 @@ post_patch() {
 
 	# parallel pahole crashes on i686, do one job for now
 	vsed -i "s/\(\$(pahole-flags-y)\)/\1 --jobs=1/" -i scripts/Makefile.btf
+
+	# Pre-generated MSM DRM register headers (workaround for pyexpat/expat
+	# version mismatch in chroot: Python 3.14 needs expat 2.7.0+)
+	if [ -d ${FILESDIR}/msm-generated-headers ]; then
+		mkdir -p drivers/gpu/drm/msm/generated
+		cp -f ${FILESDIR}/msm-generated-headers/*.xml.h drivers/gpu/drm/msm/generated/
+	fi
 }
 
 do_configure() {
@@ -92,11 +101,11 @@ do_configure() {
 	if [ -f ${FILESDIR}/${subarch:-$arch}-dotconfig-custom ]; then
 		msg_normal "Detected a custom .config file for your arch, using it.\n"
 		cp -f ${FILESDIR}/${subarch:-$arch}-dotconfig-custom .config
-		make ${makejobs} ARCH=$arch ${_cross} oldconfig
+		make ${makejobs} ARCH=$arch ${_cross} olddefconfig
 	elif [ -f ${FILESDIR}/${subarch:-$arch}-dotconfig ]; then
 		msg_normal "Detected a .config file for your arch, using it.\n"
 		cp -f ${FILESDIR}/${subarch:-$arch}-dotconfig .config
-		make ${makejobs} ARCH=$arch ${_cross} oldconfig
+		make ${makejobs} ARCH=$arch ${_cross} olddefconfig
 	fi
 
 	# Always use our revision to CONFIG_LOCALVERSION to match our pkg version.
