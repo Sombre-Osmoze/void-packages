@@ -1,11 +1,12 @@
 # Template file for 'libcamera'
 pkgname=libcamera
 version=0.7.1
-revision=2
+revision=3
 build_style=meson
-configure_args="-Dgstreamer=enabled -Dwerror=false -Dv4l2=enabled"
-hostmakedepends="pkg-config python3-yaml python3-ply python3-Jinja2"
-makedepends="openssl-devel libevent-devel gst-plugins-base1-devel gstreamer1-devel libyaml-devel"
+configure_args="-Dgstreamer=enabled -Dwerror=false -Dv4l2=enabled -Dqcam=enabled"
+hostmakedepends="pkg-config python3-yaml python3-ply python3-Jinja2 qt6-base-devel qt6-tools-devel"
+makedepends="openssl-devel libevent-devel gst-plugins-base1-devel gstreamer1-devel libyaml-devel
+ libyuv-devel eudev-libudev-devel tiff-devel"
 short_desc="Complex camera support library for Linux, Android, and ChromeOS"
 maintainer="Orphaned <orphan@voidlinux.org>"
 license="LGPL-2.1-or-later AND GPL-2.0-or-later"
@@ -18,6 +19,14 @@ case "$XBPS_TARGET_MACHINE" in
 	# PiSP is supported on aarch64 and armv*l for Raspberry Pi
 	aarch64*|armv*) makedepends+=" libpisp-devel" ;;
 esac
+
+libcamera-qcam_package() {
+	short_desc+=" - Qt-based camera viewer"
+	depends="libcamera-${version}_${revision}"
+	pkg_install() {
+		vmove usr/bin/qcam
+	}
+}
 
 libcamera-devel_package() {
 	depends="libcamera-${version}_${revision}"
